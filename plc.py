@@ -4,12 +4,12 @@ import time
 class PLC:
     def __init__(self, num_sensors):
         self.num_sensors = num_sensors
-        self.sensor_register = 0  # Inicijalno svi senzori su isključeni
+        self.sensor_register = 0  #  svi senzori su isključeni
         self.previous_states = 0
         self.sensors = 0
 
     def read_sensors(self):
-        # Simulacija čitanja stanja senzora
+        # Simulacija  stanja senzora
         self.sensor_register = random.randint(0, 2**self.num_sensors - 1)
 
     
@@ -56,7 +56,7 @@ class PLC:
                 break    
             
 if __name__ == "__main__":
-    # Kreiranje instance PLC-a sa 16 senzora
+    # PLC sa 16 senzora
     plc = PLC(16)
-    # Pokretanje simulacije
+    
     plc.run()

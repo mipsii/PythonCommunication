@@ -10,7 +10,7 @@ class ServerPLC():
         self.port = port
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(5)  # Čeka na najviše 5 konekcija
+        self.server_socket.listen(5) 
         
     def connect_to_client(self):
         pass
@@ -22,10 +22,10 @@ class ServerPLC():
             return 1
     
     def start(self):
-        """  # Pokretanje PLC servera u jednoj konzoli
+        """  # Pokretanje PLC 
             subprocess.Popen(['python', 'plc.py'])
 
-            # Pokretanje ServerPLC servera u drugoj konzoli
+            # Pokretanje ServerPLC 
             subprocess.Popen(['python', 'plcServer.py']) """
                 
         print(f"Server je pokrenut na {self.host}:{self.port}")
@@ -58,8 +58,8 @@ class ServerPLC():
         print("Server je zaustavljen.")
 
 # Inicijalizacija servera
-HOST = '127.0.0.1'  # Adresa servera
-PORT = 12345  # TCP port
+HOST = '127.0.0.1' 
+PORT = 12345  
 server = ServerPLC(HOST, PORT)
 try:
     server.start()
