@@ -1,12 +1,16 @@
 import random
 import time
+from clientPLC import ClientPLC
 
 class PLC:
-    def __init__(self, num_sensors):
+    def __init__(self, num_sensors, host,port, IdMessage):
         self.num_sensors = num_sensors
         self.sensor_register = 0  #  svi senzori su isključeni
         self.previous_states = 0
-        self.sensors = 0
+        self.host = host
+        self.port = port
+        self.socket = None
+        self.IdMessage = IdMessage
 
     def read_sensors(self):
         # Simulacija  stanja senzora
@@ -57,6 +61,10 @@ class PLC:
             
 if __name__ == "__main__":
     # PLC sa 16 senzora
-    plc = PLC(16)
+    SERVER_HOST = '127.0.0.1'
+    SERVER_PORT = 12345
+
+    IdMessage = "PLC"
+    plc = PLC(16, SERVER_HOST,SERVER_PORT, IdMessage)
     
     plc.run()

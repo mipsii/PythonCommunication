@@ -15,8 +15,12 @@ class ClientPLC:
         print("Poruka poslata:", message)
 
     def receive_message(self):
-        response = self.socket.recv(1024)
-        return response.decode()
+        try:
+            response = self.socket.recv(1024)
+            return response.decode()
+        except ConnectionResetError:
+            print("Veza prekinuta sa serverom")
+            return None
 
     def check_server_availability(self):
         try:
@@ -34,23 +38,23 @@ class ClientPLC:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.socket.connect((self.host, self.port))
                 self.send_message(self.IdMessage)
-                # Čekanje na odgovor od servera
+               
                 response = self.receive_message()
                 print("Odgovor od servera:", response)
-                # Zatvaranje konekcije
-                self.socket.close()
-                print("Povezan na server.")
+                print("Povezan na server")
                 return True
             else:
                 print("Nije moguće povezati se na server.")
                 time.sleep(5)
                 
     def start(self):
+        
         while True:
             if self.connect_to_server():
                 
-                #response = self.receive_message()
-                # print("Odgovor od servera:", response)
+                response = self.receive_message()
+                if response is not None:
+                    print("Odgovor od servera:", response)
                 self.socket.close()
 
 def main():
