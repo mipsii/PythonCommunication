@@ -1,6 +1,7 @@
 import socket
 import pickle
 import time
+import asyncio
 
 class ClientPLC:
 
@@ -10,11 +11,11 @@ class ClientPLC:
         self.socket = None
         self.IdMessage = IdMessage
 
-    def send_message(self, message):
-        self.socket.sendall(message.encode())
+    async def send_message(self, message):
+        self.socket.sendall(("{self.IdMessage}:"+message).encode())
         print("Poruka poslata:", message)
 
-    def receive_message(self):
+    async def receive_message(self):
         try:
             response = self.socket.recv(1024)
             return response.decode()
@@ -38,7 +39,6 @@ class ClientPLC:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.socket.connect((self.host, self.port))
                 self.send_message(self.IdMessage)
-               
                 response = self.receive_message()
                 print("Odgovor od servera:", response)
                 print("Povezan na server")
@@ -47,15 +47,13 @@ class ClientPLC:
                 print("Nije moguće povezati se na server.")
                 time.sleep(5)
                 
-    def start(self):
-        
-        while True:
-            if self.connect_to_server():
-                
-                response = self.receive_message()
-                if response is not None:
-                    print("Odgovor od servera:", response)
-                self.socket.close()
+    async def start(self):
+        if self.connect_to_server():  
+            while True:         
+                    response = self.receive_message()
+                    if response is not None:
+                        print("Odgovor od servera:", response)
+                    self.socket.close()
 
 def main():
     # Adresa i port servera
@@ -67,7 +65,7 @@ def main():
     client = ClientPLC(SERVER_HOST, SERVER_PORT, IdMessage)
     
     # Pokretanje klijenta
-    client.start()
+    asyncio.run(client.start())
 
 if __name__ == "__main__":
     main()

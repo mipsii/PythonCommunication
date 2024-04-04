@@ -1,3 +1,4 @@
+import asyncio
 import random
 import time
 from clientPLC import ClientPLC
@@ -11,6 +12,7 @@ class PLC:
         self.port = port
         self.socket = None
         self.IdMessage = IdMessage
+        self.client = ClientPLC(host, port, IdMessage)
 
     def read_sensors(self):
         # Simulacija  stanja senzora
@@ -19,18 +21,11 @@ class PLC:
     
     def detect_change_all(self):
         if (self.sensor_register & self.previous_states):
-            return self.print_sensor_register()
+            self.bin_sensor_register = bin(self.sensor_register)[2:].zfill(self.num_sensors)
+            self.detect_change_all()
+            return self.bin_sensor_register
         else:
             return None     
-    # @property
-    # def sensors(self):
-    #     # Vratiti podatke o senzorima
-    #     return self._sensors
-    
-    # @sensors.setter
-    # def sensors(self, value):
-    #     self._sensors = value
-        
     def detect_changes(self):
         # Detekcija promena stanja senzora        
         # for i in range(self.num_sensors):
@@ -47,14 +42,17 @@ class PLC:
         print(self.bin_sensor_register)  # Konvertovanje u binarni format sa 16 bita
         return self.bin_sensor_register
 
-    def run(self):
+    async def run(self):
         while True:
             
             try:
                 self.sensors = self.detect_change_all()
                 print(self.sensors)
                 self.read_sensors()
-                self.detect_changes()
+                registar = self.detect_changes()
+                if (registar):
+                     if self.connect_to_server():
+                        self.client.send_message(registar)
                 time.sleep(random.randint(1,10))  # Simulacija čitanja senzora i obrade podataka svake sekunde
             except KeyboardInterrupt:
                 break    
@@ -67,4 +65,4 @@ if __name__ == "__main__":
     IdMessage = "PLC"
     plc = PLC(16, SERVER_HOST,SERVER_PORT, IdMessage)
     
-    plc.run()
+    asyncio.run(plc.run())
