@@ -42,21 +42,14 @@ class PLC:
         print(self.bin_sensor_register)  # Konvertovanje u binarni format sa 16 bita
         return self.bin_sensor_register
     
-    async def connect_to_server(self):
-        try:
-            # Pokušajte da se povežete sa serverom sa vremenskim ograničenjem od 5 sekundi
-            await self.client.connect()
-            print("Uspešno povezan sa serverom.")
-            return
-        except asyncio.TimeoutError:
-            print("Nije moguće povezati se sa serverom u roku od 5 sekundi.")
-            await asyncio.sleep(5)
+   
             
     async def send_data_to_server(self):
         try:        
             if self.client.writer and not self.client.writer.is_closing():
                 print("Server je dostupan, šaljem poruku")
-                await self.client.send_message(self.sensors)
+                message = "monitoring:" + self.sensors
+                await self.client.send_message(message)
             else:
                 print("------Server nije dostupan \n")              
         except ConnectionError:
@@ -83,13 +76,17 @@ class PLC:
                 
     async def run(self):
         while True:    
-            #self.client.idRecieve = "clientPlcE"
             try:
-                # Pokretanje procesa povezivanja sa serverom i čitanja senzora paralelno
-                await asyncio.gather(self.connect_to_server(), self.read_sensors_task())
+                # Pokretanje procesa povezivanja sa serverom i čitanja senzora paralelno                
+                connect_task = asyncio.create_task(self.client.connect_to_server())
+                read_task = asyncio.create_task(self.read_sensors_task())
+                await asyncio.gather(connect_task, read_task)
                 print("izasao iz petlje")
             except KeyboardInterrupt:
-                break               
+                break       
+            except asyncio.TimeoutError:
+                print("Server nije dostupan. Čekam 5 sekundi pa ću ponovo pokušati.")
+                await asyncio.sleep(1)    
             
 if __name__ == "__main__":
     # PLC sa 16 senzora

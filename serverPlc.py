@@ -12,6 +12,7 @@ class ServerPLC():
         self.port = port
         self.client_ids = {} 
         self.message_queue = asyncio.Queue()
+        self.log_file = "message_log.txt"
 
     async def handle_client(self, reader, writer):
         
@@ -22,31 +23,25 @@ class ServerPLC():
             idName = idName.decode("utf-8").rstrip()
             print("id Name: ",idName) 
             self.client_ids[idName] = writer
-            print(f"Povezan sa klijentom {idName}.")        
+            print(f"Povezan sa klijentom {idName}.")      
+        
         try:            
             while True:              
                 client_data = await reader.readline()      
                 if not client_data:
                     break
-                print("client data",client_data)
-                
+                                
                 client_data = client_data.decode("utf-8").rstrip()
-                sender_id, content = client_data.split(':', 1)
-        
-                message = await self.messageClient(sender_id,content)
-                await self.message_queue.put(message)
-                print(f"Primljena poruka od klijenta {sender_id}: {content}")
-                
-                # Ovde dodajte logiku za obradu primljene poruke
+                if client_data=="ping":
+                    writer.write("pong".encode("utf-8"))
+                    await writer.drain()
+                else:
+                    sender_id, content = client_data.split(':', 1)
 
-                # Potvrda prijema poruke nazad klijentu
-                # confirmation_message = "Primljena poruka: " + client_data.decode()
-                # print(confirmation_message)
-                # writer.write(confirmation_message.encode())
-                # await writer.drain()                               
-                # Ovde dodajte logiku za slanje podataka klijentu                
-                await asyncio.sleep(0.5)  # Simulacija slanja podataka svake sekunde
-                
+                    #message = await self.messageClient(client_data)
+                    await self.message_queue.put(client_data)
+                    print(f"Primljena poruka od klijenta {sender_id}: {content}")
+                    
         except asyncio.CancelledError:
             print(f"Klijent {client_address} je prekinuo konekciju.")
             if writer:
@@ -55,6 +50,7 @@ class ServerPLC():
             del self.client_ids[client_address]
             
     async def messageClient(self, idClient, messageServer):
+        
         match idClient:
             case "plcE": idClient="plc"
             case "clientPlcE" : idClient="clientPlc"
@@ -73,8 +69,10 @@ class ServerPLC():
             server = await asyncio.start_server(self.handle_client, self.host, self.port)
             print(f"Server je pokrenut na {self.host}:{self.port}")
             async with server:
+                print("---------------")
                 while True:
                     if not self.message_queue.empty():
+                        print("fifo nije prazan")
                         await self.send_message_to_client()
                 
                     await asyncio.sleep(0.51)  # provera 
@@ -90,40 +88,28 @@ class ServerPLC():
                           
     async def send_message_to_client(self):
         while True:
+            print("------------------")
             try:
                 # Čitanje poruke iz FIFO reda
                 message = await self.message_queue.get()
-
+                #with open(self.log_file, "a") as f: f.write(f"{message} \n")
+            
                 # Izdvajanje informacije o tome kome je poruka namenjena
                 recipient_id, message_content = message.split(':', 1)
 
                 # Pronalaženje odgovarajućeg klijenta na osnovu ID-ja
-                writer = self.client_ids.get(recipient_id)
-                if writer:
+                
+                if recipient_id in self.client_ids:
+                    writer = self.client_ids[recipient_id]
                     # Slanje poruke klijentu
-                    writer.write(message_content.encode('utf-8') + b'\n')
+                    writer.write(message_content.encode("utf-8") + b'\n')
                     await writer.drain()
                     print(f"Poruka poslata klijentu sa ID-jem {recipient_id}: {message_content}")
                 else:
                     print(f"Klijent sa ID-jem {recipient_id} nije pronađen.")
             except Exception as e:
                 print(f"Greška pri obradi poruke iz FIFO reda: {e}")
-                
-    async def send_message_to_clients(self, message):
-        async for writer in self.client_ids.values():
-            try:
-                print(f"Poslata poruka: {message}")
-                
-                writer.write(message.encode('utf-8')+ b'\n')  # Slanje poruke kao bajtova
-                await writer.drain()
-                # response = await self.receive_message()
-                # print("Primljen odgovor od servera:", response)
-            except Exception as e:
-                print(f"Greška pri slanju poruke: {e}")
-            except KeyboardInterrupt:
-                self.server.close()
-                await self.server.wait_closed()  # Sačekaj da se server zatvori
-    
+        
 async def main():
     # Inicijalizacija servera
     HOST = '127.0.0.1' 
@@ -137,24 +123,3 @@ async def main():
         
 if __name__ == "__main__":
     asyncio.run(main())
-    #     try:
-        #         client_type = client_socket.recv(1024).decode()
-        #         client_id = self.generate_client_id(client_type)
-        #         print(f"Povezan sa {client_address} ID = {client_id}")
-        #         client_socket.sendall(f"Monitoring ID = {client_id}".encode())
-        #         # Obrada zahteva od klijenta
-        #         """print("radi")
-        #         sensor_data = PLC.self.sensors
-        #         print(sensor_data)
-        #         if sensor_data is not None:
-        #             print("salje")
-        #             data_to_send = pickle.dumps(sensor_data)
-        #             client_socket.sendall(data_to_send)
-        #             client_socket.close()
-        #         else:
-        #             print("nema podataka")
-        #             client_socket.close() """
-        #     except socket.timeout:
-        #         print("Nema konektovanog klijenta.")
-        #     except KeyboardInterrupt:
-        #         break

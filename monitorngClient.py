@@ -10,9 +10,8 @@ class Monitoring:
         self.numSensor = num_sensors
         
     async def start(self):
-        
         while True:    
-            await self.client.connect()
+            await self.client.connect_to_server()
             while True:         
                 try:
                     # message = input("Unesite poruku (ili 'quit' za izlaz): ")
@@ -21,19 +20,23 @@ class Monitoring:
                     #     return
                                         
                     receive_task = asyncio.create_task(self.client.receive_message())
-            
+                    #sending_task = asyncio.create_task(self.client.send_message('   '))
                     await receive_task
-                    self.client.send_message("reci mo")               
+                             
                 except KeyboardInterrupt:
                     await self.client.close_connection()
                     return
-                        
+                except ConnectionError:
+                    await self.client.close_connection()
+                    await asyncio.sleep(1)  # Sačekaj malo pre ponovnog pokušaja povezivanja
+                    break
+                    
 if __name__ == "__main__":
     SERVER_HOST = '127.0.0.1'
     SERVER_PORT = 12345
 
-    IdMessage = "plc"
-    monitoring = Monitoring(16, SERVER_HOST,SERVER_PORT, IdMessage)
+    IdMessage = "monitoring"
+    monitor = Monitoring(16, SERVER_HOST,SERVER_PORT, IdMessage)
     
-    asyncio.run(monitoring.start())
+    asyncio.run(monitor.start())
     
