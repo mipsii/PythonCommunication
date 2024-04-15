@@ -45,7 +45,7 @@ class Client:
             if message:
                 print(f"Primljen odgovor: {message}")
                 server_unavailable_message_printed = False
-                
+                return message
             else:
                 server_unavailable_message_printed=True
                 print("server nije dostupan")
